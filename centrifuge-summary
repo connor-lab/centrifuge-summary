@@ -8,6 +8,7 @@ import shutil
 from subprocess import run, PIPE
 import sys
 
+# Collect arguments
 parser = argparse.ArgumentParser()
 optional = parser._action_groups.pop()
 required = parser.add_argument_group("required arguments")
@@ -18,38 +19,51 @@ parser.set_defaults(verbose=False)
 parser._action_groups.append(optional)
 args = parser.parse_args()
 
+# Get the input taxon name
 taxonName = args.taxonname
+
+# Find path to the centrifuge report file
 centrifugeReport = Path(args.reportfile).resolve()
+
+# Find path to taxonkit (like "which")
 taxonKit = shutil.which("taxonkit")
 
-name2Taxid = shlex.split(taxonKit + " name2taxid")
-
+# Print progress message if verbose
 if args.verbose == True:
     print("Finding TaxIDs associated with " + taxonName + "...")
 
+# Run the taxonkit name2taxid command
+name2Taxid = shlex.split(taxonKit + " name2taxid")
 p = run(name2Taxid, input=taxonName, encoding='ascii', stdout=PIPE) 
 taxIDstdout = p.stdout.strip().split('\t')
 
+# Check that the output from the taxkit command is sane
 if len(taxIDstdout) == 2:
     taxID = taxIDstdout[1]
 else:
     print("Taxon name not found. Please check taxon name")
     exit(1)
 
+# Run the taxonkit list command to get all taxids associated with the taxon name
 taxid2List = shlex.split(taxonKit + " list --indent \"\" --ids " + taxID)
 p = run(taxid2List, stdout=PIPE)
 taxIDstdout = p.stdout.decode().strip().splitlines()
 
+# Print progress message if verbose
 if args.verbose == True:
     print("Found " + str(len(taxIDstdout)) + " corresponding TaxIDs")
 
-with open(centrifugeReport, newline = '') as csvfile:
-    reader = csv.DictReader(csvfile, delimiter='\t')
+# Read centrifuge report file 
+with open(centrifugeReport, newline = '') as tabfile:
+    # Read each line into dict using csv module, but with tab as the delimiter
+    reader = csv.DictReader(tabfile, delimiter='\t')
+    # Init list and append numReads to it if taxID from centrifuge report matches taxID from taxonkit list
     taxIDMatches = []
     for row in reader:
         if row['taxID'] in taxIDstdout:
             taxIDMatches.append(int(row['numReads']))
 
+# Check that we found some reads matching the list of taxIDs and sum the list
 if len(taxIDMatches) > 0:
     total = str(sum(taxIDMatches))
     print("Found " + total + " reads matching " + taxonName)
