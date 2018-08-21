@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+
+import argparse
+import csv
+from pathlib import Path
+import shlex
+import shutil
+from subprocess import run, PIPE
+import sys
+
+parser = argparse.ArgumentParser()
+optional = parser._action_groups.pop()
+required = parser.add_argument_group("required arguments")
+required.add_argument("-t", "--taxon-name", dest="taxonname", help="Scientific name of the taxon to count reads beneath [e.g. Escherichia]")
+required.add_argument("-c", "--report-file", dest="reportfile", help="Path to the centrifuge report-file to summarise")
+optional.add_argument("-v", "--verbose", action="store_true", help="Print crufty messages to the screen")
+parser.set_defaults(verbose=False)
+parser._action_groups.append(optional)
+args = parser.parse_args()
+
+taxonName = args.taxonname
+centrifugeReport = Path(args.reportfile).resolve()
+taxonKit = shutil.which("taxonkit")
+
+name2Taxid = shlex.split(taxonKit + " name2taxid")
+
+if args.verbose == True:
+    print("Finding TaxIDs associated with " + taxonName + "...")
+
+p = run(name2Taxid, input=taxonName, encoding='ascii', stdout=PIPE) 
+taxIDstdout = p.stdout.strip().split('\t')
+
+if len(taxIDstdout) == 2:
+    taxID = taxIDstdout[1]
+else:
+    print("Taxon name not found. Please check taxon name")
+    exit(1)
+
+taxid2List = shlex.split(taxonKit + " list --indent \"\" --ids " + taxID)
+p = run(taxid2List, stdout=PIPE)
+taxIDstdout = p.stdout.decode().strip().splitlines()
+
+if args.verbose == True:
+    print("Found " + str(len(taxIDstdout)) + " corresponding TaxIDs")
+
+with open(centrifugeReport, newline = '') as csvfile:
+    reader = csv.DictReader(csvfile, delimiter='\t')
+    taxIDMatches = []
+    for row in reader:
+        if row['taxID'] in taxIDstdout:
+            taxIDMatches.append(int(row['numReads']))
+
+if len(taxIDMatches) > 0:
+    total = str(sum(taxIDMatches))
+    print("Found " + total + " reads matching " + taxonName)
+else:
+    print("No matching reads found in this sample")
