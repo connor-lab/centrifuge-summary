@@ -66,6 +66,6 @@ with open(centrifugeReport, newline = '') as tabfile:
 # Check that we found some reads matching the list of taxIDs and sum the list
 if len(taxIDMatches) > 0:
     total = str(sum(taxIDMatches))
-    print("Found " + total + " reads matching " + taxonName)
+    print(taxonName + "\t" + total)
 else:
     print("No matching reads found in this sample")
