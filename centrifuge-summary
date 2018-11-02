@@ -10,13 +10,10 @@ import sys
 
 # Collect arguments
 parser = argparse.ArgumentParser()
-optional = parser._action_groups.pop()
-required = parser.add_argument_group("required arguments")
-required.add_argument("-t", "--taxon-name", dest="taxonname", help="Scientific name of the taxon to count reads beneath [e.g. Escherichia]")
-required.add_argument("-c", "--report-file", dest="reportfile", help="Path to the centrifuge report-file to summarise")
-optional.add_argument("-v", "--verbose", action="store_true", help="Print crufty messages to the screen")
-parser.set_defaults(verbose=False)
-parser._action_groups.append(optional)
+group = parser.add_mutually_exclusive_group(required=True)
+group.add_argument("-t", "--taxon-name", dest="taxonname", help="Scientific name of the taxon to count reads beneath [e.g. Escherichia]")
+group.add_argument("-i", "--taxon-id", dest="taxID", help="NCBI taxID to count reads beneath [e.g. 561]")
+parser.add_argument("-r", "--report-file", dest="reportfile", required=True, help="Path to the centrifuge report-file to summarise")
 args = parser.parse_args()
 
 # Get the input taxon name
@@ -28,30 +25,31 @@ centrifugeReport = Path(args.reportfile).resolve()
 # Find path to taxonkit (like "which")
 taxonKit = shutil.which("taxonkit")
 
-# Print progress message if verbose
-if args.verbose == True:
-    print("Finding TaxIDs associated with " + taxonName + "...")
-
-# Run the taxonkit name2taxid command
-name2Taxid = shlex.split(taxonKit + " name2taxid")
-p = run(name2Taxid, input=taxonName, encoding='ascii', stdout=PIPE) 
-taxIDstdout = p.stdout.strip().split('\t')
-
-# Check that the output from the taxkit command is sane
-if len(taxIDstdout) == 2:
-    taxID = taxIDstdout[1]
+# Run the taxonkit name2taxid command if taxon name provided
+if args.taxonname is not None:
+    name2Taxid = shlex.split(taxonKit + " name2taxid")
+    p = run(name2Taxid, input=taxonName, encoding='ascii', stdout=PIPE)
+    taxIDstdout = p.stdout.strip().split('\t')
+    # Check that the output from the taxkit command is sane
+    if len(taxIDstdout) == 2:
+        taxID = taxIDstdout[1]
+    else:
+        print("Taxon name not found. Please check taxon name")
+        exit(1)
 else:
-    print("Taxon name not found. Please check taxon name")
-    exit(1)
+    taxID = args.taxID
+    taxid2Name = shlex.split(taxonKit + " list --show-name --indent \"\" --ids " + taxID)
+    p = run(taxid2Name, stdout=PIPE)
+    taxid2NameStdout = p.stdout.decode().strip().splitlines()[0]
+    taxonName = taxid2NameStdout.partition(' ')[2]
+
 
 # Run the taxonkit list command to get all taxids associated with the taxon name
 taxid2List = shlex.split(taxonKit + " list --indent \"\" --ids " + taxID)
 p = run(taxid2List, stdout=PIPE)
 taxIDstdout = p.stdout.decode().strip().splitlines()
 
-# Print progress message if verbose
-if args.verbose == True:
-    print("Found " + str(len(taxIDstdout)) + " corresponding TaxIDs")
+#print(taxIDstdout)
 
 # Read centrifuge report file 
 with open(centrifugeReport, newline = '') as tabfile:
