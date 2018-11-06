@@ -59,7 +59,7 @@ with open(centrifugeReport, newline = '') as tabfile:
     taxIDMatches = []
     for row in reader:
         if row['taxID'] in taxIDstdout:
-            taxIDMatches.append(int(row['numReads']))
+            taxIDMatches.append(int(row['numUniqueReads']))
 
 # Check that we found some reads matching the list of taxIDs and sum the list
 if len(taxIDMatches) > 0:
