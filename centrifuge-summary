@@ -21,13 +21,11 @@ groupCol = parser.add_mutually_exclusive_group()
 groupCol.add_argument("-u", "--unique", action="store_const", dest="column", const="numUniqueReads", default="numUniqueReads", help="Summarize only reads UNIQUELY matching taxon [numUniqueReads column] [DEFAULT]")
 groupCol.add_argument("-a", "--all", action="store_const", dest="column", const="numReads", help="Summarize reads matching taxon [numReads column]")
 
-# 
+# Centrifuge report file path
 parser.add_argument("-r", "--report-file", dest="reportfile", required=True, help="Path to the centrifuge report-file to summarise")
 
 # Collect args
 args = parser.parse_args()
-
-print(args)
 
 # Get the input taxon name
 taxonName = args.taxonname
