@@ -26,6 +26,7 @@ or reads that match at least the target taxon:
 
 
 ### Help
+```
 usage: centrifuge-summary [-h] (-t TAXONNAME | -i TAXID) [-u | -a] -r
                           REPORTFILE
 
@@ -41,3 +42,4 @@ optional arguments:
   -a, --all             Summarize reads matching taxon [numReads column]
   -r REPORTFILE, --report-file REPORTFILE
                         Path to the centrifuge report-file to summarise
+```
