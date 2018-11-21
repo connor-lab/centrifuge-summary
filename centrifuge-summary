@@ -10,11 +10,24 @@ import sys
 
 # Collect arguments
 parser = argparse.ArgumentParser()
-group = parser.add_mutually_exclusive_group(required=True)
-group.add_argument("-t", "--taxon-name", dest="taxonname", help="Scientific name of the taxon to count reads beneath [e.g. Escherichia]")
-group.add_argument("-i", "--taxon-id", dest="taxID", help="NCBI taxID to count reads beneath [e.g. 561]")
+
+# Taxon name/ID group
+groupTax = parser.add_mutually_exclusive_group(required=True)
+groupTax.add_argument("-t", "--taxon-name", dest="taxonname", help="Scientific name of the taxon to count reads beneath [e.g. Escherichia]")
+groupTax.add_argument("-i", "--taxon-id", dest="taxID", help="NCBI taxID to count reads beneath [e.g. 561]")
+
+# Centrifuge report column name group
+groupCol = parser.add_mutually_exclusive_group()
+groupCol.add_argument("-u", "--unique", action="store_const", dest="column", const="numUniqueReads", default="numUniqueReads", help="Summarize only reads UNIQUELY matching taxon [numUniqueReads column] [DEFAULT]")
+groupCol.add_argument("-a", "--all", action="store_const", dest="column", const="numReads", help="Summarize reads matching taxon [numReads column]")
+
+# 
 parser.add_argument("-r", "--report-file", dest="reportfile", required=True, help="Path to the centrifuge report-file to summarise")
+
+# Collect args
 args = parser.parse_args()
+
+print(args)
 
 # Get the input taxon name
 taxonName = args.taxonname
@@ -59,7 +72,7 @@ with open(centrifugeReport, newline = '') as tabfile:
     taxIDMatches = []
     for row in reader:
         if row['taxID'] in taxIDstdout:
-            taxIDMatches.append(int(row['numUniqueReads']))
+            taxIDMatches.append(int(row[args.column]))
 
 # Check that we found some reads matching the list of taxIDs and sum the list
 if len(taxIDMatches) > 0:
