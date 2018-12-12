@@ -77,4 +77,4 @@ if len(taxIDMatches) > 0:
     total = str(sum(taxIDMatches))
     print(taxonName + "\t" + total)
 else:
-    print("No matching reads found in this sample")
+    print(taxonName + "\t0")
